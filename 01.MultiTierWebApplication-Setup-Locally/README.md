@@ -176,7 +176,8 @@ Run the following command inside the correct folder:
 vagrant up
 ```
 
-- GitBash Screenshot:
+- Screenshot:
+
   ![alt text](<images/01.vagrant up screenshot.png>)
 
 - You can check from the Oracle VirtualBox interface:
@@ -234,6 +235,7 @@ ping mc01 -c 4
 ```
 
 - Screenshot:
+
   ![alt text](<images/03.vagrant ssh web01.png>)
 
 ---
@@ -299,6 +301,222 @@ And try pinging the other services to verify host resolution:
 ping db01 -c 4
 ping mc01 -c 4
 ```
+
+---
+
+---
+
+---
+
+## 03. MySQL Setup
+
+This section walks you through the setup and configuration of **MySQL (MariaDB)** for the VProfile project. This is a critical step, as all services in the application depend on a properly configured and initialized database.
+
+---
+
+### 📦 Prerequisites
+
+Before starting:
+
+- Ensure all VMs are up and running.
+- If you took a long break, run `vagrant reload` in the appropriate folder to restart the VMs:
+
+  ```bash
+  vagrant reload
+  ```
+
+Make sure you are inside the correct directory:
+`vprofile-project/vagrant/Manual_provisioning_WinMacIntel`
+
+---
+
+### 🚪 Step 1: SSH into the DB VM
+
+Log into the database VM:
+
+```bash
+vagrant ssh db01
+```
+
+Switch to the root user:
+
+```bash
+sudo -i
+```
+
+---
+
+### 🔄 Step 2: System Update
+
+Update the system to get the latest patches:
+
+```bash
+dnf update -y
+```
+
+---
+
+### 📥 Step 3: Install Required Packages
+
+Install EPEL repository, Git, and MariaDB Server:
+
+```bash
+dnf install epel-release -y
+dnf install git mariadb-server -y
+```
+
+---
+
+### ▶️ Step 4: Start and Enable MariaDB
+
+Start and enable the database service:
+
+```bash
+systemctl start mariadb
+systemctl enable mariadb
+systemctl status mariadb
+```
+
+- Screenshot:
+
+![alt text](<images/04.Start and Enable MariaDB.png>)
+
+---
+
+### 🔐 Step 5: Secure the Database
+
+Run the security script to configure root access and remove vulnerabilities:
+
+```bash
+mysql_secure_installation
+```
+
+Answer the questions as follows:
+
+- Current root password? → Press Enter (no password yet)
+
+- Switch to unix_socket authentication? → Enter (default Yes)
+
+- Change root password? → Yes
+  Use: admin123
+
+- Remove anonymous users? → Yes
+
+- Disallow root login remotely? → Yes
+
+- Remove test database? → Yes
+
+- Reload privilege tables now? → Yes
+
+---
+
+### 💾 Step 6: Login to MySQL
+
+Login with the root user:
+
+```bash
+mysql -u root -p
+```
+
+Enter password: `admin123`
+
+---
+
+### 🏗️ Step 7: Create Database and User
+
+Inside the MySQL prompt:
+
+```bash
+CREATE DATABASE accounts;
+
+GRANT ALL PRIVILEGES ON accounts.* TO 'admin'@'localhost' IDENTIFIED BY 'admin123';
+
+GRANT ALL PRIVILEGES ON accounts.* TO 'admin'@'%' IDENTIFIED BY 'admin123';
+
+FLUSH PRIVILEGES;
+
+EXIT;
+```
+
+- Screenshot:
+
+![alt text](<images/05.Login to MySQL , Create Database and User.png>)
+
+---
+
+### 🧬 Step 8: Load DB Schema (SQL Dump)
+
+Clone the source code:
+
+```bash
+cd /tmp
+
+git clone -b local https://github.com/hkhcoder/vprofile-project.git
+
+cd vprofile-project
+```
+
+Navigate to SQL file location:
+
+```bash
+cd src/main/resources
+```
+
+Run SQL dump into the database:
+
+```bash
+mysql -u root -p accounts < db_backup.sql
+```
+
+Password: `admin123`
+
+---
+
+### 🔍 Step 9: Verify Database
+
+Login to MySQL again:
+
+```bash
+mysql -u root -p accounts
+```
+
+List the tables:
+
+```bash
+SHOW TABLES;
+```
+
+You should see a list of tables populated from the `db_backup.sql`.
+
+To check available databases:
+
+```bash
+SHOW DATABASES;
+```
+
+- Screenshot:
+
+![alt text](<images/06.Verify Database.png>)
+
+---
+
+### 🔥 (Optional) Firewall Settings
+
+⚠️ Skipped for now — These commands relate to firewall configuration and will be explained later with proper networking context.
+
+---
+
+### ✅ Summary
+
+✔️ Updated OS and installed MariaDB
+
+✔️ Secured root user and database
+
+✔️ Created database accounts and user admin
+
+✔️ Loaded schema using provided SQL dump
+
+Your MySQL setup is now complete! 🎉
 
 ---
 
