@@ -909,3 +909,216 @@ systemctl status tomcat
 ---
 
 ---
+
+## 07. Nginx Setup
+
+This guide explains how to set up **Nginx** as a reverse proxy and load balancer for forwarding HTTP requests to a backend service (e.g., Tomcat). This setup is part of a Vagrant-based multi-VM architecture, where **web01** is the Nginx server.
+
+### 🔧 Objective
+
+To configure Nginx on `web01` Ubuntu machine to:
+
+- Listen for HTTP requests on port `80`
+- Forward requests to a backend server (`app01`) running on port `8080`
+
+---
+
+### 🧱 System Overview
+
+- **Nginx Server (web01)**: Acts as a reverse proxy/load balancer.
+- **Backend App Server (app01)**: Hosts the actual application on port `8080`.
+
+---
+
+### ⚙️ Step-by-Step Instructions
+
+1. Connect to the Nginx Server
+
+```bash
+vagrant ssh web01
+sudo -i   # Switch to root user
+```
+
+2. Update and Upgrade System Packages
+
+```bash
+apt update && apt upgrade -y
+```
+
+`apt update`: Checks for available updates.
+
+`apt upgrade`: Applies the updates.
+
+3. Install Nginx
+
+```bash
+apt install nginx -y
+```
+
+4. Configure Nginx
+
+📁 File Location
+
+Create the config file in:
+
+```bash
+vi /etc/nginx/sites-available/vproapp
+```
+
+📝 Sample Configuration
+
+```bash
+upstream vproapp {
+    server app01:8080;
+}
+
+server {
+    listen 80;
+
+    location / {
+        proxy_pass http://vproapp;
+    }
+}
+```
+
+5. Enable the Configuration
+
+- Remove the default config:
+
+```bash
+rm /etc/nginx/sites-enabled/default
+```
+
+- Create a symbolic link:
+
+```bash
+ln -s /etc/nginx/sites-available/vproapp /etc/nginx/sites-enabled/vproapp
+```
+
+6. Restart Nginx
+
+```bash
+systemctl restart nginx
+```
+
+Check status:
+
+```bash
+systemctl status nginx
+```
+
+If there are errors, review the config file.
+
+---
+
+### 📂 Directory Reference
+
+| Directory                     | Purpose                                       |
+| ----------------------------- | --------------------------------------------- |
+| `/etc/nginx/sites-available/` | Contains all virtual host configuration files |
+| `/etc/nginx/sites-enabled/`   | Contains symlinks to enabled virtual hosts    |
+
+---
+
+### ✅ Final Notes
+
+Once the setup is complete:
+
+- Access your application via the IP of `web01` on port `80`.
+- Nginx will automatically forward it to the backend service on port `8080`.
+
+---
+
+---
+
+---
+
+## 08. Validate
+
+This document explains how to **validate the complete application stack** after setting up the Nginx reverse proxy and deploying the application. The goal is to ensure that all integrated services — Nginx, Tomcat (backend), PostgreSQL (database), Memcached (cache), and RabbitMQ (messaging) — are working correctly.
+
+---
+
+## ✅ Validation Goals
+
+- Ensure **Nginx** is forwarding requests correctly.
+- Verify that the **Tomcat** application is up and serving content.
+- Confirm **Database** connection by logging in with stored credentials.
+- Test **RabbitMQ** integration.
+- Test **Memcached** for caching mechanism.
+
+---
+
+### 🌐 Step 1: Access the Application via Browser
+
+Open your browser and visit:
+`http://192.168.56.11`
+
+- `192.168.56.11` is the IP address of the `web01` (Nginx) server.
+- HTTP uses port `80` by default, so it can be omitted in the URL.
+- This request is forwarded by Nginx to the Tomcat server on port `8080`.
+
+If the application loads, it confirms:
+
+- Nginx is configured correctly.
+- Tomcat is running.
+- Nginx is successfully forwarding traffic.
+
+- Screenshot:
+
+![alt text](<images/08.Access the Application.png>)
+
+### 🔐 Step 2: Log In to the Application
+
+Use the following credentials:
+
+- **Username**: `admin_vp`
+- **Password**: `admin_vp`
+
+These credentials are stored in the PostgreSQL database, loaded via DB schema and dump.
+
+✅ If login is successful, the database connection is verified.
+
+- Screenshot:
+
+![alt text](<images/09.Login to the Application.png>)
+
+### 📦 Step 3: Validate RabbitMQ Integration
+
+Click the **"RabbitMQ"** button (available only to the `admin_vp` user).
+
+- If the message _"Queues and connection established successfully"_ appears, RabbitMQ is working correctly.
+- If you see an error or no response, troubleshoot the RabbitMQ setup.
+
+- Screenshot:
+
+![alt text](<images/10. Validate RabbitMQ.png>)
+
+---
+
+### 💾 Step 4: Validate Memcached
+
+Click the **"All Users"** button:
+
+- This triggers a database call and lists all users.
+- Select any user (e.g., `Aron`).
+- First time: Data is fetched from the database and stored in Memcached.
+- Second time: Data is fetched quickly from cache (no DB hit).
+
+💡 This demonstrates how the cache improves response time for repeated data access.
+
+- Screenshots:
+
+![alt text](<images/11.1 Validate Memcached.png>)
+
+![alt text](<images/11.2 Validate Memcached.png>)
+
+---
+
+### 🧹 Step 5: (Optional) Destroy the Setup
+
+After validation, you can clean up the environment:
+
+```bash
+vagrant destroy --force
+```
