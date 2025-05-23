@@ -1,0 +1,1 @@
+{"rsync":{"/vagrant":{"type":"rsync","guestpath":"/vagrant","hostpath":"C:/DevOpsProjects/02.AutomatedSetupOfMultiTierApp-Locally/vprofile-project-local/vagrant/Automated_provisioning_WinMacIntel","disabled":false,"__vagrantfile":true,"owner":"vagrant","group":"vagrant"}}}
