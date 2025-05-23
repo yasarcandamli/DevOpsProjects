@@ -738,3 +738,174 @@ systemctl status rabbitmq-server
 ---
 
 ---
+
+## 06. App Setup (Tomcat & Vprofile Deployment)
+
+This document explains how to set up the Tomcat application server and deploy the `vprofile` application using Maven. This is part of a multi-tier architecture project and assumes the supporting services like MySQL, Memcached, and RabbitMQ are already configured.
+
+---
+
+### 📦 Prerequisites
+
+Make sure the following packages are installed and services are already configured:
+
+- Java JDK 17
+- Git & wget
+- Apache Tomcat 10
+- Apache Maven
+- Vagrant VM with hostname: `app01`
+- Database service (MySQL), RabbitMQ, and Memcached properly set up
+
+---
+
+### 🔧 Step-by-Step Setup
+
+1. Connect to Tomcat VM & Update the System
+
+```bash
+vagrant ssh app01
+
+sudo -i
+
+dnf update -y
+```
+
+2. Install Dependencies
+
+```bash
+dnf install epel-release -y
+
+dnf install java-17-openjdk java-17-openjdk-devel -y
+
+dnf install git wget unzip -y
+```
+
+3. Download and Install Tomcat
+
+```bash
+cd /tmp
+
+wget https://archive.apache.org/dist/tomcat/tomcat-10/v10.1.26/bin/apache-tomcat-10.1.26.tar.gz
+
+tar -xvzf apache-tomcat-10.1.26.tar.gz
+
+useradd --home-dir /usr/local/tomcat --shell /sbin/nologin tomcat
+
+cp -r apache-tomcat-10.1.26/* /usr/local/tomcat
+
+chown tomcat.tomcat -R /usr/local/tomcat/
+```
+
+4. Configure Tomcat as a System Service
+   Create the file: `vi /etc/systemd/system/tomcat.service`
+
+```bash
+[Unit]
+Description=Tomcat
+After=network.target
+
+[Service]
+User=tomcat
+Group=tomcat
+WorkingDirectory=/usr/local/tomcat
+Environment=JAVA_HOME=/usr/lib/jvm/jre
+Environment=CATALINA_PID=/var/tomcat/%i/run/tomcat.pid
+Environment=CATALINA_HOME=/usr/local/tomcat
+Environment=CATALINE_BASE=/usr/local/tomcat
+ExecStart=/usr/local/tomcat/bin/catalina.sh run
+ExecStop=/usr/local/tomcat/bin/shutdown.sh
+RestartSec=10
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
+```
+
+Reload systemd and start Tomcat:
+
+```bash
+systemctl daemon-reload
+
+systemctl start tomcat
+
+systemctl enable tomcat
+
+systemctl status tomcat
+```
+
+---
+
+### 🛠 Build and Deploy vProfile Application
+
+1. Download and Install Maven
+
+```bash
+cd /tmp
+
+wget https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.zip
+
+unzip apache-maven-3.9.9-bin.zip
+
+cp -r apache-maven-3.9.9 /usr/local/maven3.9
+```
+
+Set fake memory for Maven (VM workaround):
+
+```bash
+export MAVEN_OPTS="-Xmx512m"
+```
+
+2. Clone the Source Code
+
+```bash
+git clone -b local https://github.com/hkhcoder/vprofile-project.git
+
+cd vprofile-project
+```
+
+⚠ Make sure the file `src/main/resources/application.properties` contains the correct service connection details for:
+
+- MySQL (hostname: `db01`, port: `3306`)
+- Memcached (hostname: `mc01`, port: `11211`)
+- RabbitMQ (hostname: `mq01`, port: `5672`, user: `test`, pass: `test`)
+
+3. Build the Application
+
+```bash
+/usr/local/maven3.9/bin/mvn install
+```
+
+4. Deploy the Artifact
+
+```bash
+rm -rf /usr/local/tomcat/webapps/ROOT
+
+cp target/vprofile-v2.war /usr/local/tomcat/webapps/ROOT.war
+
+chown tomcat: /usr/local/tomcat/webapps/ROOT.war
+```
+
+Tomcat will automatically extract the `.war` file and deploy it.
+
+Restart Tomcat:
+
+```bash
+systemctl restart tomcat
+```
+
+---
+
+### ✅ Validation
+
+- Confirm that Tomcat is running:
+
+```bash
+systemctl status tomcat
+```
+
+---
+
+---
+
+---
