@@ -616,3 +616,125 @@ memcached -p 11211 -U 11111 -u memcached -d
 ---
 
 ---
+
+## 05. RabbitMQ Setup
+
+This guide explains how to install and configure the RabbitMQ message queuing service for the VProfile project. RabbitMQ will be used to handle asynchronous communication between services.
+
+---
+
+### 🖥️ Target Environment
+
+- VM Name: `rmq01`
+- OS: CentOS 8 (or similar)
+- Tool: Vagrant
+- User: `vagrant` (switch to root during setup)
+
+---
+
+### 🔧 Setup Steps
+
+1. Connect to RabbitMQ VM
+
+```bash
+vagrant ssh rmq01
+sudo -i  # Switch to root
+```
+
+2. Update System Packages (Optional)
+
+```bash
+dnf update -y
+```
+
+⚠️ This step is optional but recommended for real-world usage.
+
+3. Set EPEL Repository & Install Required Tools
+
+```bash
+dnf install epel-release -y
+
+dnf install wget -y
+```
+
+4. Add RabbitMQ Repository
+
+```bash
+dnf -y install centos-release-rabbitmq-38
+```
+
+📝 This command adds the RabbitMQ YUM repository to your system.
+
+5. Install RabbitMQ Server
+
+```bash
+dnf --enablerepo=centos-rabbitmq-38 -y install rabbitmq-server
+```
+
+6. Start and Enable RabbitMQ Service
+
+```bash
+systemctl enable --now rabbitmq-server
+```
+
+✅ This command both enables and starts the RabbitMQ service.
+
+---
+
+### 🛠️ Configuration Steps
+
+7. Create RabbitMQ Configuration File
+
+```bash
+sudo sh -c 'echo "[{rabbit, [{loopback_users, []}]}]." > /etc/rabbitmq/rabbitmq.config'
+```
+
+🧠 This allows remote connections by disabling default loopback restrictions.
+
+8. Restart RabbitMQ to Apply Config
+
+```bash
+systemctl restart rabbitmq-server
+```
+
+---
+
+### 👤 RabbitMQ User Management
+
+9. Add a New User
+
+```bash
+rabbitmqctl add_user test test
+```
+
+10. Assign Administrator Tag to the User
+
+```bash
+rabbitmqctl set_user_tags test administrator
+```
+
+11. Set User Permissions
+
+```bash
+rabbitmqctl set_permissions -p / test ".*" ".*" ".*"
+
+systemctl restart rabbitmq-server   #restart the service after changes
+```
+
+---
+
+### 📊 Final Verification
+
+12. Check RabbitMQ Service Status
+
+```bash
+systemctl status rabbitmq-server
+```
+
+✅ Status should show `active (running)`. Use `q` to quit the status view.
+
+---
+
+---
+
+---
