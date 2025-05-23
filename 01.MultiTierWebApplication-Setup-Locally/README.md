@@ -523,3 +523,96 @@ Your MySQL setup is now complete! 🎉
 ---
 
 ---
+
+## 04. Memcached Setup
+
+This document provides step-by-step instructions to set up the Memcached service for the VProfile project. Memcached is used here as a caching layer to improve performance.
+
+### 🖥️ Target Environment
+
+- VM Name: `mc01`
+- OS: CentOS 8 (or similar)
+- Tool: Vagrant
+- User: `vagrant` (switch to root during setup)
+
+---
+
+### 🔧 Setup Steps
+
+1. Connect to Memcached VM
+
+```bash
+vagrant ssh mc01
+sudo -i  # Switch to root
+```
+
+2. Update System Packages (Optional)
+
+```bash
+dnf update -y
+```
+
+⚠️ This step is optional for this lab project **(takes long time)** but recommended in real-world setups to apply latest patches.
+
+3. Install Required Packages
+   Install EPEL repository and Memcached service:
+
+```bash
+dnf install epel-release -y
+dnf install memcached -y
+```
+
+4. Enable and Start Memcached
+
+```bash
+systemctl start memcached
+systemctl enable memcached
+```
+
+5. Configure Memcached for Remote Access
+   By default, Memcached listens only to `127.0.0.1` (localhost). To allow connections from external services (e.g., Tomcat), change it to `0.0.0.0`.
+
+Run the following command to modify the config:
+
+```bash
+sed -i 's/127.0.0.1/0.0.0.0/g' /etc/sysconfig/memcached
+```
+
+Verify change (optional):
+
+```bash
+cat /etc/sysconfig/memcached
+```
+
+- Screenshot:
+
+![alt text](<images/07.Configure Memcached for Remote Access.png>)
+
+6. Restart Memcached Service
+
+```bash
+systemctl restart memcached
+```
+
+7. Manually Start Memcached Daemon (Optional)
+   Run Memcached manually with default port (11211: TCP port / 11111: UDP port):
+
+```bash
+memcached -p 11211 -U 11111 -u memcached -d
+```
+
+🔁 `-d` runs it as a background process (daemon).
+
+---
+
+### 🔥 Notes
+
+- **Port 11211:** Memcached default port
+- Ensure the configuration allows remote connections if your app runs on a different VM.
+- Firewall settings are not mandatory for this lab. They will be discussed in detail in networking sections.
+
+---
+
+---
+
+---
